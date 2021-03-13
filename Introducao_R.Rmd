@@ -1,0 +1,149 @@
+---
+title: " Introdução ao R"
+author: "Tauã Magalhães Vital"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+A ideia deste tutorial é apresentar ao leitor a linguagem R. Vamos explorar um pouco os conceitos iniciais da linguagem.
+
+## Instalação
+
+O R está disponível para Windows, MacOS e Linux. Para o download veja <https://cran.r-project.org/>. Recomenda-se o download do Rstudio <https://rstudio.com/products/rstudio/download/> também.
+
+## Comandos básicos
+
+O R é uma linguagem orientada a objetos e possui uma *command line interface*, de forma que os comandos são digitados na linha são executados.
+
+Para executar uma linha de comando, basta que o cursor esteja nela e clicar em 'Run' ou pressionar 'ctrl+enter' (Windows/Linux) ou 'command+enter' (MacOS).
+
+Como toda iniciação a programação, vamos começar com o comando mais básico possível.
+
+```{r}
+print("Hello World!")
+```
+O R suporta as operações matemáticas básicas '+', '-','*' e '/', e exponenciação '^'. 
+```{r }
+7+4
+8^2
+```
+
+## Tipos de dados
+
+O R suporta uma variedade de dados, inclueindo escalares, vetores (numéricos, textuais ou booleanos), matrizes, *data frames* e listas.
+
+Utiliza-se o símbolo '<-' para atribuir valores ou funções para os objetos. Enquanto o símbolo '#' pode ser utilizado para acrescentar comentários ao texto (todo o código seguinte a '#' na linha é ignorado na execução do código).
+
+O R possui funções base já no seu *environment*, como a função c(), utilizada para a concatenação de valores
+
+#### Vetores
+```{r }
+# Vetor numerico
+a <- c(1, 1.2, 1.4, 1.6, 1.8, 2);a
+# Vetor textual
+b <- c("um", "dois", "tres") #Note que valores textuais devem ser informados entre " "
+b
+# Vetor logico
+c <- c(TRUE, FALSE, TRUE, FALSE)
+c
+```
+
+Ainda, podemos gerar sequências de valores seguindo alguma distribuição de probabilidade conhecida. Em ciências sociais, a hipótese de normalidade é muitas vezes assumida. Assim vamos gerar dados seguindo uma distribuição Gaussiana de forma que x~N(0,1).
+
+```{r}
+x <- rnorm(n = 1000, mean = 0, sd = 1) #estamos gerando um vetor de tamanho 1x1000 seguindo uma normal padronizada
+summary(x) #estatistica descritiva de x
+```
+
+#### Matrizes
+Matrizes podem possuir apenas elementos da mesma classe. 
+```{r}
+Y <- matrix(1:20, nrow = 5,ncol = 4);Y 
+```
+
+```{r}
+celulas <- c(1, 26, 24, 68)
+nome_linha <- c("R1", "R2")
+nome_coluna <- c("C1", "C2")
+Z <- matrix(celulas, nrow = 2, ncol = 2, byrow = TRUE, dimnames = list(nome_linha, nome_coluna));Z
+```
+
+#### *Data frames*
+*Data frames* podem possuir tipos diferentes de dados.
+
+```{r}
+d <- c(1, 2, 3, 4)
+e <- c("um", "dois", "tres", NA)
+f <- c(TRUE,TRUE,TRUE,FALSE)
+exemplo_df <- data.frame(d,e,f)
+names(exemplo_df) <- c("ID","Color","Passed") #A funcao names permite redefinir ou atribuir nomes as colunas
+exemplo_df
+```
+
+## Gráficos
+Vamos fazer o nosso primeiro plot usando o R, e para isso vamos instalar o nosso primeiro pacote. Uma das bibliotecas mais utilizadas para fazer gráficos no R é utilizar o 'ggplot2'.
+
+O primeiro passo é a instalação do pacote, para isso há duas formas. A primeira utilizando o RStudio é clicar no painel esquerdo inferior do console Packages>Install e digitar o nome do pacote que se deseja instalar. A segunda é através da função install.packages().
+
+Concluída a instalação é necessário ativar o pacote que também pode ser feita pelo console clicando na opção em Packages ou através da funcc1ção library().
+
+```{r}
+# install.packages("ggplot2")
+library(ggplot2)
+```
+
+Vamos plotar a função de distribuição de probabilidade da variável x criada.
+
+```{r}
+ggplot(data.frame(x), aes(x)) + 
+    geom_density() # note que eu transformo o objeto vetor para um data frame
+```
+
+O pacote ggplot2 faz parte do universo de bibliotecas Tidyverse, note que a função ggplot() pode tomar vários argumentos adicionais que o usuário vai necessitar acrescentar para que o plot fique com o padrão desejado. 
+
+A maneira usual de se coletar informações sobre pacotes no R é através do CRAN, por exemplo, o CRAN do ggplot2 pode ser encontrado aqui <https://cran.r-project.org/web/packages/ggplot2/index.html>. Uma das formas usuais de se conseguir ajuda em momentos de desespero é o stackoverflow, <https://stackoverflow.com/>. O comando help() também pode ser utilizado.
+
+## Exemplo usual
+
+Um exercício clássico do econometrista consiste em carregar um conjunto de dados e performar análises de regressão sobre eles. Suponha que um colega tenha lhe procurado de posse de um conjunto de dados contendo o salário minímo e a taxa de desemprego dos estados norte-americanos. Ele deseja saber qual a relação entre salário minímo e taxa de desemprego nos Estados Unidos.
+
+O primeiro passo em geral deve ser definir seu diretório de trabalho através da função setwd(). No diretório de trabalho deve constar os dados que você deseja carregar.
+
+```{r}
+setwd("/Users/tauamagalhaes/Documents/Monitoria_MQII") # Windows geralmente necessita que se duplique as \
+getwd() # fornece o seu diretorio atual
+```
+
+O R suporta várias fontes diferentes de dados, csv, xls, xlsx, json, dta. Vamos carregar o arquivo minimum_wage.csv disponível em <https://github.com/tauamagalhaes/Econometria/blob/main/minimum_wage.csv>.
+
+```{r}
+minimum_wage.df <- readr::read_csv("https://raw.githubusercontent.com/tauamagalhaes/Econometria/main/minimum_wage.csv")
+summary(minimum_wage.df)
+```
+
+Note que o nome das variáveis estão separados por espaços, isso dificulta a interpretação do código. Gosto de manter o minímo de boas práticas de code, mas fica ao critério do usuário, renomeá-las ou não.
+
+```{r}
+names(minimum_wage.df)[1] <- "state"
+names(minimum_wage.df)[2] <- "wage"
+names(minimum_wage.df)[3] <- "unemployment"
+```
+Vamos performar nossa primeira regressão no R. A função lm() performa as estimativas utilizando mínmos quadrados ordinários, vamos ver então o seguinte modelo:
+
+$$
+unemployment = \beta_0 + \beta_1 wage + \epsilon
+$$
+
+De forma a encontrar se um aumento do salário tem um efeito positivo ou negativo na taxa de desemprego nos Estados Unidos.
+
+```{r}
+ols_unemployment <- lm(unemployment ~ wage, data = minimum_wage.df)
+summary(ols_unemployment)
+```
+
+Pelos resultados, temos uma relação positiva mas não estatisticamente significante a níveis convencionais de significância estatística. 
+
+Importante ressaltar, que de forma alguma podemos estabelecer uma relacc1ção causal entre salário mínimo e desemprego, como mostrado em aula. Ao longo do curso, a discussão entre causalidade e correlação será abordada em mais detalhes.
