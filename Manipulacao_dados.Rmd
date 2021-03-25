@@ -1,0 +1,132 @@
+---
+title: "Manipulação de dados no R"
+author: "Tauã Magalhães Vital"
+date: "3/23/2021"
+output: html_document
+---
+
+Nesta monitoria vamos trazer um pouco dos conceitos de manipulação de dados no R.
+
+Para tal, utilizaremos dados sobre homicídios e educação dos estados brasileiros para o ano de 2014.
+
+O download dos dados pode ser feito através do repositório <https://github.com/tauamagalhaes/Econometria>.
+
+## Carregando os dados
+
+Conforme mencionado na última monitoria, o R aceita uma grande variedade de dados (csv, xlsx, xls, dta). A maneira mais simples de fazer o upload dos dados é utizar o acesso "*Import Dataset*" através do *Environment* (usualmente no canto superior direito da tela). 
+
+Outra maneira é definindo um diretório de trabalho, no qual esteja o seu conjunto de dados e fazer o upload dos mesmos.
+
+```{r, message=FALSE}
+# Definindo o diretorio de trabalho
+setwd("/Users/tauamagalhaes/Documents/Monitoria_MQII")
+# Ativando o pacote
+library(readr)
+# Carregando os dados
+education_df <- read_csv("/Users/tauamagalhaes/Documents/Monitoria_MQII/educacao.csv")
+# Checando as primeiras linhas
+head(education_df)
+```
+
+Uma outra maneira seria fazer o upload dos dados direto do repositório do Github.
+
+```{r, message=FALSE}
+# Carregando os dados direto do Github
+crime_df <- readr::read_csv("https://raw.githubusercontent.com/tauamagalhaes/Econometria/main/homicidios.csv")
+# Checando as primeiras linhas
+head(crime_df)
+```
+
+## Manipulando os dados
+
+### *Merge*
+Note que os dados estão divididos em duas tabelas diferentes, para qualquer análise econométrica temos que primeiro mergir os dados em um único *data frame*.
+
+Para fazer o *merge* entre os dados é muitas vezes necessário termos uma *key variable* que identifique unicamente as observações em ambos conjuntos distintos separadamente. No caso analisado temos a sigla dos Estados que identificam unicamente as observações, e, portanto, vamos usá-la para a tarefa.
+
+Antes de executar o *join*, percebe-se que temos duas colunas no conjunto de dados "educacao_df" com colunas nulas. Vamos exlcui-las. Há diversas formas de fazer isso, como exclui-las usando *drop* ou apenas selecionando as colunas desejadas. Como mencionado em nossa última monitoria, uma das maneiras mais fáceis de se descobrir como executar uma tarefa no R é consultar o <https://stackoverflow.com/>. 
+
+##### Key tip:
+Escreva sempre sua dúvida em inglês
+
+```{r}
+education_df <- education_df[,-c(6,7)]
+
+head(education_df)
+```
+
+Uma das melhores ferramentas para manipulação de dados no R é o pacote 'dplyr'. Ele inclui diversas funções que vão auxiliar, por exemplo, no *merge* dos dados. Uma muito comum é a left_join(), que permite adicionar colunas de dados ao seu conjunto original utilizando uma *key variable*, no nosso caso a sigla dos Estados.
+
+```{r, warning=FALSE}
+library(dplyr)
+crime_df <- left_join(crime_df, education_df, by = c("sigla" = "Sigla")) # letras maiusculas importam
+# Uma outra forma seria a funcao base do R, merge()
+# crime_df <- merge(crime_df, educattion_df, by.x = "sigla", by.y = "Sigla")
+head(crime_df)
+```
+
+Agora todos as observações estão em um único *data frame*, 'crime_df'. Conforme mencionado, há diversos tipos de *joins* disponíveis no 'dplyr', muitas baseadas em dados estruturas e na linguagem SQL, recomendo aqueles interessados olhar o CRAN do pacote, ou ainda, há muita documentação sobre o tema na internet.
+
+Um conceito importante ao manipular dados no R é o de *tidy data*, resumindo brevemente o que isso implica:
+
+(i) Cada variável deve possuir uma única coluna;
+(ii) Cada observação deve possuir uma única linha;
+(iii) Cada valor deve possuir uma célula única.
+
+### Renomeado colunas
+
+```{r}
+names(crime_df)[2] <- "number_homicides"
+names(crime_df)[5] <- "years_study"
+names(crime_df)[6] <- "population"
+```
+### Criando novas *features*
+
+Muitas vezes é necessário a criação de novas variáveis baseadas em variáveis presentes no nosso conjunto de dados. Por exemplo, temos o número de homicídios em cada Estado, porém, usualmente utiliza-se a taxa de homicídios por cem mil habitantes.
+
+```{r}
+# O simbolo $ apos o nome de um objeto permite selecionarmos atributos pertencentes aos objetos
+crime_df$homicide_rate <- (crime_df$number_homicides / crime_df$population)*100000
+head(crime_df)
+```
+
+### Estatísticas descritivas
+
+A função base summary() fornece algumas informações úteis sobre os dados.
+```{r}
+summary(crime_df)
+```
+
+### Plots
+
+Em nossa última monitoria já mencionamos o pacote 'ggplot2' que permite criarmos uma gama de gráficos no R. Abaixo vamos fazer um plot do número de anos de estudo e da taxa de homicídios nos estados brasileiros.
+
+```{r}
+library(ggplot2)
+
+ggplot(crime_df, aes(x = homicide_rate, y = years_study)) + geom_point() + geom_line() + labs(tittle = "Crime x Education", x = "Homicide rate", y = "Years of study")
+```
+
+Vamos adicionar agora uma linha de regressão entre as variáveis através da função geom_smooth().
+```{r, warning=FALSE}
+ggplot(crime_df, aes(x = years_study, y = homicide_rate)) + geom_point(color = 'blue') + geom_smooth(method='lm', se = FALSE, color = 'red')+ labs(tittle = "Crime x Education", x = "Years of study", y = "Homicide rate")
+```
+
+A função ggplot() também pode ser utilizada para a criação de mapas temáticos.
+
+Desennvolvido pelo IPEA, o pacote 'geobr' permite fazer o upload de arquivos espaciais em diversos níveis de desagregação do território nacional. Vamos fazer o download do arquivo para os estados brasileiros e fazer o *join* para que consigamos criar um mapa que indique a taxa de homicídios entre as Unidades da Federação.
+
+```{r, message=FALSE}
+library(geobr)
+```
+```{r, message=FALSE}
+# Carregando os dados espaciais usando a API do geobr
+states_df <- read_state(code_state = "all", year = 2014) 
+# Join
+crime_df <- left_join(states_df, crime_df, by = c("abbrev_state" = "sigla"))
+```
+
+Agora vamos fazer o plot do mapa com a função extra geom_sf()
+```{r}
+ggplot() + geom_sf(data = crime_df, aes(fill = homicide_rate), color = NA, size = .15)  +  scale_fill_gradient(low = "yellow", high = "red", name = "Taxa de homicídios")+ ggtitle("Taxa de homicídios nos estados Brasileiros") + theme(plot.title = element_text(size=10))
+```
